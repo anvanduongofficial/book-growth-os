@@ -1,60 +1,55 @@
-import { type EmailOtpType } from '@supabase/supabase-js';
-import { type NextRequest, NextResponse } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const token_hash = searchParams.get('token_hash');
-  const type = searchParams.get('type') as EmailOtpType | null;
-  const next = searchParams.get('next') ?? '/'; // Đăng nhập xong thì về trang chủ
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/'
 
-  if (token_hash && type) {
-    const cookieStore = {
-      getAll() { return [] },
-      setAll() {}
-    } as any; // Mock cookie store cho route handler đơn giản (hoặc dùng cookies() từ next/headers nếu cần strict)
+  if (code) {
+    const cookieStore = await cookies() // Next.js 15 bắt buộc phải await cái này
 
-    // Tạo client server-side tạm thời để trao đổi token
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-            get(name: string) {
-                return request.cookies.get(name)?.value
-              },
-              set(name: string, value: string, options: CookieOptions) {
-                request.cookies.set({
-                  name,
-                  value,
-                  ...options,
-                })
-                // Cập nhật cookie cho response trả về
-                cookieStore.setAll([{ name, value, options }]) 
-              },
-              remove(name: string, options: CookieOptions) {
-                request.cookies.set({
-                  name,
-                  value: '',
-                  ...options,
-                })
-                cookieStore.setAll([{ name, value: '', options }])
-              },
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            } catch {
+              // Bỏ qua lỗi nếu gọi từ Server Component, nhưng ở Route Handler này thì nó sẽ chạy tốt.
+            }
+          },
         },
       }
-    );
-
-    const { error } = await supabase.auth.verifyOtp({
-      type,
-      token_hash,
-    });
-
+    )
+    
+    // Đổi code lấy session
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    
     if (!error) {
-      // Đổi token thành công -> Chuyển hướng người dùng về trang đích
-      return NextResponse.redirect(new URL(next, request.url));
+      // Thành công -> Redirect về Home
+      // Quan trọng: Check môi trường để redirect đúng
+      const forwardedHost = request.headers.get('x-forwarded-host') 
+      const isLocalEnv = process.env.NODE_ENV === 'development'
+
+      if (isLocalEnv) {
+        return NextResponse.redirect(`${origin}${next}`)
+      } else if (forwardedHost) {
+        return NextResponse.redirect(`https://${forwardedHost}${next}`)
+      } else {
+        return NextResponse.redirect(`${origin}${next}`)
+      }
     }
   }
 
-  // Nếu lỗi -> Chuyển về trang lỗi
-  return NextResponse.redirect(new URL('/auth/auth-code-error', request.url));
+  // Nếu lỗi -> Chuyển sang trang báo lỗi
+  return NextResponse.redirect(`${origin}/auth/auth-code-error`)
 }

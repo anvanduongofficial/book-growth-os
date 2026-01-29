@@ -13,6 +13,36 @@ export default function HomePage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // const [userEmail, setUserEmail] = useState<string | null>(null);
+  
+  // // Logic check user
+  //   useEffect(() => {
+  //     const getUser = async () => {
+  //       // 1. Lấy session hiện tại
+  //       const { data: { session } } = await supabase.auth.getSession();
+        
+  //       if (session?.user) {
+  //         setUserEmail(session.user.email || "User");
+  //         console.log("✅ Đã đăng nhập:", session.user.email);
+  //       } else {
+  //         console.log("❌ Chưa có session");
+  //       }
+
+  //       // 2. Lắng nghe sự kiện đăng nhập/đăng xuất (Auth State Change)
+  //       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+  //         if (session?.user) {
+  //             setUserEmail(session.user.email || "User");
+  //         } else {
+  //             setUserEmail(null);
+  //         }
+  //       });
+
+  //       return () => subscription.unsubscribe();
+  //     };
+
+  //     getUser();
+  //   }, []);
+
   // useEffect chạy 1 lần khi mở trang để tải sách
   useEffect(() => {
     async function fetchBooks() {

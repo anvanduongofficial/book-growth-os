@@ -65,9 +65,8 @@ export default function DayActionPage() {
             <ToolList tools={dayData.tools || []} />
         </div>
 
-        {/* Footer */}
-        <CompleteFooter />
-
+        {/* Footer - Truyền ID sách và Ngày hiện tại vào */}
+            <CompleteFooter bookId={book.id} dayIndex={dayIndex} />
       </div>
     </main>
   );
