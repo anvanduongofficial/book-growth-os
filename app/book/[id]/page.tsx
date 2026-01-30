@@ -11,6 +11,7 @@ import ContinueButton from "@/components/roadmap/ContinueButton";
 
 export default function BookRoadmapPage() {
   const params = useParams();
+  const bookId = params.id as string;
   
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,18 +41,20 @@ export default function BookRoadmapPage() {
 
       // 3. Lấy Tiến độ của User (Nếu đã đăng nhập)
       if (user) {
-        const { data: progressData } = await supabase
-          .from('user_progress')
-          .select('current_day')
-          .eq('user_id', user.id)
-          .eq('book_id', params.id)
-          .single();
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_progress')
+        .select('current_day')
+        .eq('user_id', user.id)
+        .eq('book_id', bookId) // bookId lấy từ params
+        // 🔴 LỖI CŨ: .single() -> Bắt buộc phải có data, không có là lỗi 406
+        // 🟢 SỬA THÀNH: .maybeSingle() -> Có thì lấy, không có thì trả về null (êm ru)
+        .maybeSingle(); 
 
-        // Nếu có tiến độ thì cập nhật, không thì vẫn là 1
-        if (progressData) {
-          setCurrentDay(progressData.current_day);
-        }
+      // Nếu có tiến độ thì cập nhật, không thì mặc định vẫn là 1
+      if (progressData) {
+        setCurrentDay(progressData.current_day);
       }
+    }
       
       setLoading(false);
     }
@@ -64,8 +67,6 @@ export default function BookRoadmapPage() {
 
   // Tìm tiêu đề ngày hiện tại cho nút Continue
   const currentDayData = book.roadmap.find(d => d.day_index === currentDay);
-  console.log("currentDay", currentDay)
-  console.log("book", book)
 
   return (
     <main className="flex justify-center min-h-screen bg-[#F8FAFC]">

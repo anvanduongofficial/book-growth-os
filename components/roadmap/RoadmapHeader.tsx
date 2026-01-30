@@ -1,56 +1,67 @@
-"use client";
-
+import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
-import { ChevronLeft, MoreHorizontal } from "lucide-react";
 
 interface Props {
-    title: string;
-    cover: string;
-    totalDays: number;
-    currentDay: number;
+  title: string;
+  cover?: string | null; // Cho phép null hoặc undefined
+  totalDays?: number;
+  currentDay?: number;
 }
 
-export default function RoadmapHeader({ title, cover, totalDays, currentDay }: Props) {
-    // Tính phần trăm hoàn thành
-    // Ví dụ: Đang ở ngày 1, nhưng chưa xong ngày 1 -> progress tính theo số ngày ĐÃ xong (currentDay - 1)
-    const progress = Math.min(100, Math.round(((currentDay - 1) / totalDays) * 100));
-    console.log("currentDay", currentDay)
-    console.log("totalDays", totalDays)
-    return (
-      <div className="bg-white p-5 pb-6 shadow-sm sticky top-0 z-20">
-          {/* Top Bar */}
-          <div className="flex justify-between items-center mb-6">
-              <Link href="/" className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
-                  <ChevronLeft size={24} className="text-gray-700" />
-              </Link>
-              <button className="text-gray-400">
-                  <MoreHorizontal size={24} />
-              </button>
-          </div>
+export default function RoadmapHeader({ title, cover, totalDays = 0, currentDay = 1 }: Props) {
   
-          {/* Info Sách */}
-          <div className="flex gap-4 items-center mb-4">
-              <img src={cover} alt={title} className="w-16 h-24 object-cover rounded shadow-md" />
-              <div>
-                  <h1 className="font-bold text-xl text-gray-900 leading-tight mb-1">{title}</h1>
-                  <p className="text-sm text-gray-500">{totalDays} ngày hành động</p>
-              </div>
-          </div>
+  // 🔥 FIX LỖI Ở ĐÂY:
+  // Nếu không có cover hoặc cover là chuỗi rỗng -> Dùng ảnh mặc định
+  const safeCoverUrl = (cover && cover.trim() !== "") 
+    ? cover 
+    : "https://placehold.co/400x600?text=No+Cover";
 
-          {/* === THANH TIẾN ĐỘ === */}
-          <div>
-            <div className="flex justify-between text-xs font-bold text-gray-500 mb-1.5">
-                <span>Tiến độ của bạn</span>
-                <span className="text-blue-600">{progress}%</span>
-            </div>
-            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div 
-                    className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-out"
-                    style={{ width: `${progress}%` }}
-                ></div>
-            </div>
-          </div>
+  // Tính phần trăm tiến độ (để làm thanh progress bar cho đẹp)
+  const progressPercent = totalDays > 0 ? Math.min((currentDay / totalDays) * 100, 100) : 0;
 
+  return (
+    <div className="bg-white p-5 pt-8 pb-6 shadow-sm sticky top-0 z-20">
+      
+      {/* Nút Back */}
+      <Link href="/" className="inline-flex items-center text-slate-400 hover:text-slate-800 transition-colors mb-4">
+        <ChevronLeft size={20} /> <span className="text-sm font-bold ml-1">Quay lại</span>
+      </Link>
+
+      <div className="flex gap-4">
+        {/* Ảnh bìa sách */}
+        <div className="w-20 h-28 shrink-0 rounded-lg shadow-md overflow-hidden bg-slate-100 border border-slate-100 relative">
+          <img 
+            src={safeCoverUrl} // <-- Dùng biến đã xử lý
+            alt={title} 
+            className="w-full h-full object-cover"
+            // Thêm onError để nếu link ảnh chết thì tự đổi về placeholder
+            onError={(e) => {
+              e.currentTarget.src = "https://placehold.co/400x600?text=Error";
+            }}
+          />
+        </div>
+
+        {/* Thông tin bên cạnh */}
+        <div className="flex-1 flex flex-col justify-center">
+          <h1 className="text-xl font-bold text-slate-900 leading-tight mb-1 line-clamp-2">
+            {title}
+          </h1>
+          <p className="text-xs text-slate-500 font-medium mb-3">
+            Lộ trình {totalDays} ngày
+          </p>
+
+          {/* Thanh tiến độ nhỏ */}
+          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-blue-600 rounded-full transition-all duration-500"
+              style={{ width: `${progressPercent}%` }}
+            ></div>
+          </div>
+          <p className="text-[10px] text-blue-600 font-bold mt-1 text-right">
+            Đã học {Math.round(progressPercent)}%
+          </p>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}

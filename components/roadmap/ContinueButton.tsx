@@ -1,8 +1,5 @@
-// src/components/roadmap/ContinueButton.tsx
-"use client";
-
 import Link from "next/link";
-import { Play, ChevronRight } from "lucide-react";
+import { Play } from "lucide-react";
 
 interface Props {
   bookId: string;
@@ -12,28 +9,22 @@ interface Props {
 
 export default function ContinueButton({ bookId, dayIndex, dayTitle }: Props) {
   return (
-    <div className="fixed bottom-8 left-0 w-full pointer-events-none z-30">
-        <div className="w-full max-w-[420px] mx-auto px-6 flex justify-center pointer-events-auto">
-            
-            <Link href={`/book/${bookId}/day/${dayIndex}`}>
-                <button className="group flex items-center gap-3 bg-gray-900 text-white pl-5 pr-6 py-3.5 rounded-full shadow-2xl shadow-blue-200 hover:scale-[1.02] active:scale-95 transition-all duration-300">
-                    
-                    {/* Icon Play */}
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                        <Play size={14} fill="currentColor" className="ml-0.5" />
-                    </div>
-                    
-                    {/* Text */}
-                    <div className="flex flex-col items-start">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Tiếp tục</span>
-                        <span className="text-sm font-bold leading-none">Ngày {dayIndex}: {dayTitle}</span>
-                    </div>
-
-                    {/* Arrow */}
-                    <ChevronRight size={16} className="text-gray-500 group-hover:text-white transition-colors ml-2" />
-                </button>
-            </Link>
-        </div>
+    <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-100 flex justify-center">
+      <div className="w-full max-w-[420px]">
+        <Link 
+          href={`/book/${bookId}/day/${dayIndex}`} // <-- Link chuẩn đây
+          className="flex items-center justify-between w-full p-4 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition-all active:scale-95"
+        >
+          <div className="text-left">
+            <p className="text-xs text-slate-400 uppercase font-bold mb-1">Tiếp tục học</p>
+            <p className="font-bold text-sm truncate max-w-[200px]">Ngày {dayIndex}: {dayTitle}</p>
+          </div>
+          
+          <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
+            <Play size={20} fill="currentColor" />
+          </div>
+        </Link>
+      </div>
     </div>
   );
 }

@@ -12,3 +12,15 @@
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+.learn-content img {
+  width: 100%;
+  height: auto;
+  /* Giả sử ảnh của bạn thường là hình chữ nhật ngang (16:9) */
+  /* Nếu không trình duyệt sẽ coi chiều cao = 0 rồi nhảy cái bộp */
+  aspect-ratio: 16 / 9; 
+  background-color: #f3f4f6; /* Màu xám nhạt giữ chỗ */
+  border-radius: 0.75rem; /* Bo góc cho đẹp (rounded-xl) */
+  margin-bottom: 1.5rem;
+  display: block;
+}

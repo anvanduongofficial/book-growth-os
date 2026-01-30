@@ -34,14 +34,65 @@ export interface DayRoadmap {
   summary: string;
   tools: ActionTool[];
 }
- // 5. Cấu trúc Sách với lộ trình
+
+// Định nghĩa cấu trúc cho "Workbook" (Bài tập điền vào chỗ trống)
+export interface WorkbookField {
+  id: string;
+  label: string;      // Ví dụ: "Hành động cụ thể"
+  placeholder: string; // Ví dụ: "Đọc sách 2 trang..."
+  type: 'text' | 'time' | 'location'; // Để hiện đúng bàn phím nhập
+}
+
+// Định nghĩa cấu trúc cho "Quiz" (Trắc nghiệm nhanh)
+export interface Quiz {
+  question: string;
+  options: string[];  // ["A. 1%", "B. 50%", "C. 100%"]
+  correctAnswer: number; // Index của câu đúng (0, 1, hoặc 2)
+  explanation: string;   // Giải thích tại sao đúng (User rất thích cái này)
+}
+
+// Định nghĩa cấu trúc cho "Quà tặng" (Asset)
+export interface Asset {
+  type: 'audio' | 'image' | 'pdf';
+  url: string;        // Link file trên Supabase Storage
+  title: string;      // Ví dụ: "Audio tóm tắt (3 phút)"
+}
+
+// Cấu trúc MỚI của một Ngày học
+export interface RoadmapDay {
+  day_index: number;      // Ngày 1, 2, 3
+  title: string;          // Tên bài
+  summary: string;        // Mô tả ngắn (hiện ở card bên ngoài)
+  
+  // --- PHẦN PREMIUM CONTENT ---
+  content: string;        // Nội dung chính (Markdown/HTML)
+  audioUrl?: string;      // Link file nghe (Option)
+  
+  // --- PHẦN TƯƠNG TÁC (INTERACTIVE) ---
+  workbook?: {
+    title: string;        // Ví dụ: "Thiết kế thói quen của bạn"
+    fields: WorkbookField[];
+  };
+  
+  // --- PHẦN GAMIFICATION ---
+  quiz?: Quiz;            // Câu hỏi kiểm tra
+  xp: number;             // Điểm thưởng (vd: 50 XP)
+  
+  // --- PHẦN QUÀ TẶNG ---
+  gift?: {
+    title: string;        // "Hình nền điện thoại Quote hay nhất"
+    imageUrl: string;
+  };
+}
+
+// Cấu trúc sách tổng thể
 export interface Book {
-  id: string;          // ID định danh (vd: 'atomic-habits')
-  title: string;       // Tên sách
-  author: string;      // Tác giả
-  cover: string;       // Link ảnh bìa
-  totalDays: number;   // Tổng số ngày
-  description: string; // Mô tả ngắn
-  // Mảng chứa lộ trình chi tiết các ngày
-  roadmap: DayRoadmap[]; 
+  id: string;
+  title: string;
+  author: string;
+  cover: string;
+  totalDays: number;
+  description: string;
+  category: string[];
+  roadmap: RoadmapDay[]; // Mảng các ngày học theo cấu trúc mới
 }
