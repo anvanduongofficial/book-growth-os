@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react"; // Thêm useCallback
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 export type TabType = "LEARN" | "ACTION";
 
@@ -11,61 +11,70 @@ export interface QuizState {
 
 export function useBookProgress(bookId: string, dayIndex: number) {
   const storageKey = `book_progress_${bookId}_day_${dayIndex}`;
-  
+  const draftKey = `${storageKey}_draft`; // Key riêng cho dữ liệu nháp
+
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
-  // 🔥 1. THÊM CỜ ĐIỀU KHIỂN AUTO-SAVE (Mặc định là True)
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
-
   const [activeTab, setActiveTabState] = useState<TabType>("LEARN");
-  const [workbookAnswers, setWorkbookAnswers] = useState<Record<string, string>>({});
+
+  // 🔥 CHÌA KHÓA: Tách biệt dữ liệu Đã chốt và dữ liệu Nháp
+  const [dbAnswers, setDbAnswers] = useState<Record<string, string>>({}); // Dữ liệu đã nhấn Save
+  const [localAnswers, setLocalAnswers] = useState<Record<string, string>>({}); // Dữ liệu đang gõ
   const [quizState, setQuizState] = useState<QuizState>({ selected: null, isSubmitted: false });
 
-  // 1. LOAD DATA
+  // 1. LOAD DATA: Ưu tiên dữ liệu đã chốt, nếu không có mới lấy nháp
   useEffect(() => {
     setIsLoaded(false);
-    // Reset state
-    setWorkbookAnswers({});
-    setQuizState({ selected: null, isSubmitted: false });
+    
+    const savedConfirmed = localStorage.getItem(storageKey);
+    const savedDraft = localStorage.getItem(draftKey);
 
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.workbookAnswers) setWorkbookAnswers(parsed.workbookAnswers);
-        if (parsed.quizState) setQuizState(parsed.quizState);
-        if (parsed.activeTab) setActiveTabState(parsed.activeTab);
-      } catch (e) {
-        console.error("Lỗi parse data:", e);
-      }
+    if (savedConfirmed) {
+      const parsed = JSON.parse(savedConfirmed);
+      setDbAnswers(parsed.workbookAnswers || {});
+      setQuizState(parsed.quizState || { selected: null, isSubmitted: false });
+      // Nếu có nháp, ưu tiên hiển thị nháp để người dùng gõ tiếp
+      setLocalAnswers(savedDraft ? JSON.parse(savedDraft) : parsed.workbookAnswers);
+    } else if (savedDraft) {
+      setLocalAnswers(JSON.parse(savedDraft));
     }
+
     setIsLoaded(true);
-  }, [storageKey]);
+  }, [storageKey, draftKey]);
 
-  // 🔥 2. TÁCH LOGIC LƯU RA THÀNH HÀM RIÊNG (để có thể gọi thủ công)
-  const persistData = useCallback(() => {
-      const dataToSave = { workbookAnswers, quizState, activeTab };
-      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-      
-      // Hiệu ứng "Đang lưu..."
-      setIsSaving(true);
-      setTimeout(() => setIsSaving(false), 500);
-  }, [workbookAnswers, quizState, activeTab, storageKey]);
+  // 🔥 2. LOGIC KIỂM TRA THAY ĐỔI (So sánh Nháp và Thật)
+  const hasChanges = useMemo(() => {
+    return JSON.stringify(dbAnswers) !== JSON.stringify(localAnswers);
+  }, [dbAnswers, localAnswers]);
 
-  // 3. AUTO-SAVE EFFECT
+  // 3. AUTO-SAVE NHÁP (Lưu vào LocalStorage để không mất khi thoát, nhưng không cập nhật dbAnswers)
   useEffect(() => {
     if (!isLoaded) return;
-    
-    // 🔥 CHỈ LƯU TỰ ĐỘNG NẾU ĐƯỢC PHÉP
-    if (autoSaveEnabled) {
-        persistData();
-    }
-  }, [persistData, isLoaded, autoSaveEnabled]); // Chạy khi data thay đổi
+    localStorage.setItem(draftKey, JSON.stringify(localAnswers));
+  }, [localAnswers, draftKey, isLoaded]);
 
-  // ... (Các hàm update giữ nguyên)
+  // 4. HÀM XÁC NHẬN (Lưu chính thức) - Chốt chặn Tầng 2
+  const saveNow = useCallback(() => {
+    setIsSaving(true);
+    
+    const dataToSave = { 
+      workbookAnswers: localAnswers, 
+      quizState, 
+      activeTab 
+    };
+
+    // Lưu vào Key chính thức
+    localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+    
+    // 🔥 Cập nhật dbAnswers để khớp với localAnswers -> hasChanges sẽ về false
+    setDbAnswers(localAnswers);
+    
+    setTimeout(() => setIsSaving(false), 500);
+  }, [localAnswers, quizState, activeTab, storageKey]);
+
+  // Các hàm update
   const updateWorkbook = (fieldId: string, value: string) => {
-    setWorkbookAnswers(prev => ({ ...prev, [fieldId]: value }));
+    setLocalAnswers(prev => ({ ...prev, [fieldId]: value }));
   };
 
   const updateQuiz = (selected: number | null, isSubmitted: boolean) => {
@@ -77,30 +86,16 @@ export function useBookProgress(bookId: string, dayIndex: number) {
   };
 
   const resetData = () => {
-    console.log(`🧹 Đang xóa toàn bộ dữ liệu của sách: ${bookId}`);
-    
-    // BƯỚC 1: Tìm và diệt tất cả key liên quan đến cuốn sách này
-    // Key có dạng: book_progress_7-thoi-quen_day_1, book_progress_7-thoi-quen_day_2...
     const prefix = `book_progress_${bookId}`;
-    const keysToRemove: string[] = [];
-
-    // Duyệt qua toàn bộ LocalStorage để tìm kẻ địch
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        // Nếu key bắt đầu bằng prefix của sách này -> Đưa vào danh sách tử hình
         if (key && key.startsWith(prefix)) {
-            keysToRemove.push(key);
+            localStorage.removeItem(key);
         }
     }
-
-    // Thực thi án tử (Xóa key)
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    
-    // BƯỚC 2: Reset State của trang hiện tại về rỗng (để UI cập nhật ngay)
-    setWorkbookAnswers({});
+    setLocalAnswers({});
+    setDbAnswers({});
     setQuizState({ selected: null, isSubmitted: false });
-    
-    console.log(`✅ Đã xóa ${keysToRemove.length} bản ghi tiến độ.`);
   };
 
   return {
@@ -108,14 +103,12 @@ export function useBookProgress(bookId: string, dayIndex: number) {
     isSaving,
     activeTab,
     setActiveTab,
-    workbookAnswers,
+    workbookAnswers: localAnswers, // UI luôn hiển thị những gì đang gõ (nháp)
     updateWorkbook,
     quizState,
     updateQuiz,
     resetData,
-    
-    // 🔥 XUẤT 2 MÓN MỚI RA NGOÀI
-    setAutoSaveEnabled, // Hàm tắt auto-save
-    saveNow: persistData // Hàm ép buộc lưu ngay lập tức
+    saveNow,      // Hàm nhấn để Chốt dữ liệu
+    hasChanges,   // Biến để biết có đang sửa đổi mà chưa chốt hay không
   };
 }

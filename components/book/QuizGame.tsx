@@ -21,7 +21,6 @@ export const QuizGame = ({
   
   // Hàm làm sạch text (bỏ các ký tự đánh dấu nếu có)
   const cleanOptionText = (text: string) => text.replace(/^\s*[A-D]\.\s*/i, "").trim();
-
   return (
     <div className="space-y-4">
       {/* HEADER QUIZ */}

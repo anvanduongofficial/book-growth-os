@@ -1,98 +1,86 @@
-// src/types/roadmap.ts
-
-export type ToolType = 'checklist' | 'calculator';
-
-// 1. Cấu trúc cho Checklist
-export interface ChecklistItem {
-  id: string;
-  label: string;
+// 1. Cấu trúc DNA (Xương sống tri thức)
+export interface HardLogic {
+  concept: string;
+  logic_path: string;
+  benchmarks?: string;
+  formula?: string;
 }
 
-// 2. Cấu trúc cho Calculator
-export interface CalculatorConfig {
-  input_label: string;
-  result_label: string;
-  suffix?: string;
+export interface ShadowTrap {
+  name: string;
+  description: string;
+  consequence: string;
 }
 
-// 3. Cấu trúc Tool đa hình (Polymorphic)
-export interface ActionTool {
-  id: string;
-  type: ToolType;
-  title: string;
-  description?: string;
-  
-  // Dữ liệu tuỳ chọn cho từng loại tool
-  items?: ChecklistItem[];
-  config?: CalculatorConfig;
+export interface SummaryDNA {
+  proprietary_system: string;
+  core_philosophy: string;
+  hard_logics: HardLogic[];
+  shadow_traps: ShadowTrap[];
+  expert_quotes: string[];
 }
 
-// 4. Cấu trúc 1 Ngày
-export interface DayRoadmap {
-  day_index: number;
-  title: string;
-  summary: string;
-  tools: ActionTool[];
+// 2. Cấu trúc Bài học (Tab 1)
+export interface DailyLesson {
+  summary_highlight: string; // Câu dưới tiêu đề (Vd: Mỗi phút trôi qua...)
+  trap: string;              // Card Đỏ
+  shift: string;             // Card Xanh Dương
+  proof: string;             // Card Xám
+  micro_action: string;      // Card Xanh Lá
 }
 
-// Định nghĩa cấu trúc cho "Workbook" (Bài tập điền vào chỗ trống)
+// 3. Cấu trúc Thực hành (Tab 2)
+export type FieldType = 'text' | 'number' | 'checkbox' | 'time' | 'location';
+
 export interface WorkbookField {
   id: string;
-  label: string;      // Ví dụ: "Hành động cụ thể"
-  placeholder: string; // Ví dụ: "Đọc sách 2 trang..."
-  type: 'text' | 'time' | 'location'; // Để hiện đúng bàn phím nhập
+  label: string;
+  placeholder: string;
+  type: FieldType;
 }
 
-// Định nghĩa cấu trúc cho "Quiz" (Trắc nghiệm nhanh)
-export interface Quiz {
-  question: string;
-  options: string[];  // ["A. 1%", "B. 50%", "C. 100%"]
-  correctAnswer: number; // Index của câu đúng (0, 1, hoặc 2)
-  explanation: string;   // Giải thích tại sao đúng (User rất thích cái này)
-}
-
-// Định nghĩa cấu trúc cho "Quà tặng" (Asset)
-export interface Asset {
-  type: 'audio' | 'image' | 'pdf';
-  url: string;        // Link file trên Supabase Storage
-  title: string;      // Ví dụ: "Audio tóm tắt (3 phút)"
-}
-
-// Cấu trúc MỚI của một Ngày học
-export interface RoadmapDay {
-  day_index: number;      // Ngày 1, 2, 3
-  title: string;          // Tên bài
-  summary: string;        // Mô tả ngắn (hiện ở card bên ngoài)
-  
-  // --- PHẦN PREMIUM CONTENT ---
-  content: string;        // Nội dung chính (Markdown/HTML)
-  audioUrl?: string;      // Link file nghe (Option)
-  
-  // --- PHẦN TƯƠNG TÁC (INTERACTIVE) ---
+export interface DailyPractice {
   workbook?: {
-    title: string;        // Ví dụ: "Thiết kế thói quen của bạn"
+    title: string;
     fields: WorkbookField[];
+    calculation_logic?: {
+      formula: string;      // Ví dụ: "f1 - f2"
+      result_label: string;
+      unit: string;
+    };
   };
-  
-  // --- PHẦN GAMIFICATION ---
-  quiz?: Quiz;            // Câu hỏi kiểm tra
-  xp: number;             // Điểm thưởng (vd: 50 XP)
-  
-  // --- PHẦN QUÀ TẶNG ---
+  quiz?: {
+    question: string;
+    options: string[];
+    correctAnswer: number;
+    explanation: string;
+  };
+}
+
+// 4. Cấu trúc một Ngày học hoàn chỉnh
+export interface RoadmapDay {
+  day_index: number;
+  title: string;
+  lesson: DailyLesson;
+  practice: DailyPractice;
+  xp: number;
   gift?: {
-    title: string;        // "Hình nền điện thoại Quote hay nhất"
+    title: string;
     imageUrl: string;
   };
 }
 
-// Cấu trúc sách tổng thể
+// 5. Cấu trúc Sách tổng thể để lưu Database
 export interface Book {
   id: string;
   title: string;
   author: string;
   cover: string;
-  totalDays: number;
   description: string;
   category: string[];
-  roadmap: RoadmapDay[]; // Mảng các ngày học theo cấu trúc mới
+  total_days: number;
+  dna: SummaryDNA;
+  roadmap: RoadmapDay[];
+  isPublished: boolean;
+  createdAt: string;
 }
